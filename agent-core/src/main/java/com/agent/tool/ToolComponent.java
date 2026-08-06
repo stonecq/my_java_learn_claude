@@ -1,0 +1,15 @@
+package com.agent.tool;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface ToolComponent {
+
+    boolean enabled() default true;
+
+    String group() default "default";
+}
