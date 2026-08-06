@@ -8,25 +8,23 @@ import java.nio.file.Path;
  */
 final class Workspace {
 
-    /** 默认取启动目录，可通过 -Dagent.workdir=... 覆盖 */
-    private static final Path ROOT = Path.of(
-            System.getProperty("agent.workdir", System.getProperty("user.dir")))
-            .toAbsolutePath()
-            .normalize();
-
     private Workspace() {
     }
 
+    /** 默认取启动目录，可通过 -Dagent.workdir=... 覆盖（每次调用读取，便于测试替换） */
     static Path root() {
-        return ROOT;
+        return Path.of(System.getProperty("agent.workdir", System.getProperty("user.dir")))
+                .toAbsolutePath()
+                .normalize();
     }
 
     static Path resolve(String p) {
         if (p == null || p.isBlank()) {
             throw new IllegalArgumentException("路径不能为空");
         }
-        Path resolved = ROOT.resolve(p).normalize();
-        if (!resolved.startsWith(ROOT)) {
+        Path root = root();
+        Path resolved = root.resolve(p).normalize();
+        if (!resolved.startsWith(root)) {
             throw new IllegalArgumentException("Path escapes workspace: " + p);
         }
         return resolved;
