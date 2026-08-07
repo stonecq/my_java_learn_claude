@@ -1,0 +1,4 @@
+{
+  "denyList": ["rm -rf /", "sudo", "shutdown", "reboot", "mkfs", "dd if=", "> /dev/sda"],
+  "destructiveCommands": ["git push --force", "git reset --hard", "docker rmi", "drop database", "mkdir"]
+}

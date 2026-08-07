@@ -8,8 +8,13 @@ import com.agent.model.AgentState;
 import com.agent.model.content_block.ContentBlock;
 import com.agent.model.content_block.ToolResultBlock;
 import com.agent.model.content_block.ToolUseBlock;
+import com.agent.permission.PermissionConfig;
+import com.agent.permission.PermissionPipeline;
+import com.agent.permission.PermissionResult;
+import com.agent.permission.UserApprovalCallback;
 import com.agent.tool.ToolRegistry;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,17 +26,20 @@ public class AgentEngine {
 
     private final AgentState agentState;
 
+    private final PermissionPipeline permissionPipeline;
+
     private final int maxTurns;
 
-    public AgentEngine(Client llmClient, ToolRegistry toolRegistry) {
-        this(llmClient, toolRegistry, 50);
+    public AgentEngine(Path workdir, Client llmClient, ToolRegistry toolRegistry, UserApprovalCallback callback) {
+        this(workdir, llmClient, toolRegistry, 50, callback);
     }
 
-    public AgentEngine(Client llmClient, ToolRegistry toolRegistry, int maxTurns) {
+    public AgentEngine(Path workdir, Client llmClient, ToolRegistry toolRegistry, int maxTurns, UserApprovalCallback callback) {
         this.llmClient = llmClient;
         this.toolRegistry = toolRegistry;
         this.agentState = new AgentState();
         this.maxTurns = maxTurns;
+        this.permissionPipeline = PermissionConfig.withDefaults(workdir, callback);
     }
 
     public AgentResponse run(String systemPrompt, String userMessage, int maxTokens) {
@@ -53,11 +61,17 @@ public class AgentEngine {
                 return response;
             }
 
-            // Step 4: 筛选出 tool_use 块并逐个执行，收集结果
+            // Step 4: 逐个过权限检查后执行 tool_use 块，收集结果
             List<ToolResultBlock> toolResults = response.getContent().stream()
                     .filter(ToolUseBlock.class::isInstance)
                     .map(ToolUseBlock.class::cast)
-                    .map(toolRegistry::dispatch)
+                    .map(block -> {
+                        PermissionResult result = permissionPipeline.check(block.name(), block.input());
+                        if (result instanceof PermissionResult.Denied(String reason)) {
+                            return new ToolResultBlock(block.id(), "权限拒绝: " + reason, true);
+                        }
+                        return toolRegistry.dispatch(block);
+                    })
                     .toList();
 
             // Step 5: 以 user 角色把工具结果追加回消息，回到 Step 2
