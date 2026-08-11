@@ -1,9 +1,13 @@
 package com.agent.tool.tools;
 
-import com.agent.model.content_block.ToolUseBlock;
-import com.agent.tool.Tool;
-import com.agent.tool.ToolDescriptor;
-import com.agent.tool.ToolRegistry;
+import com.agent.core.model.content_block.ToolUseBlock;
+import com.agent.core.tool.Tool;
+import com.agent.core.tool.ToolDescriptor;
+import com.agent.core.tool.ToolRegistry;
+import com.agent.core.tool.tools.EditTool;
+import com.agent.core.tool.tools.GlobTool;
+import com.agent.core.tool.tools.ReadTool;
+import com.agent.core.tool.tools.WriteTool;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

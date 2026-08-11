@@ -1,14 +1,13 @@
 package com.agent;
 
-import com.agent.client.DeepSeekLLMClient;
-import com.agent.engine.AgentEngine;
-import com.agent.hook.HookRegistry;
+import com.agent.core.client.DeepSeekLLMClient;
+import com.agent.core.engine.AgentEngine;
+import com.agent.core.hook.HookRegistry;
 import com.agent.hook.config.HookConfig;
-import com.agent.model.AgentResponse;
-import com.agent.model.content_block.ContentBlock;
-import com.agent.model.content_block.TextBlock;
-import com.agent.tool.ToolRegistry;
-import com.agent.tool.tools.BashTool;
+import com.agent.core.model.AgentResponse;
+import com.agent.core.model.content_block.ContentBlock;
+import com.agent.core.model.content_block.TextBlock;
+import com.agent.core.tool.ToolRegistry;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,7 +19,9 @@ public class AgentHarnessApplication {
     private static final Path wordDir = Path.of("V:\\learn\\work_space\\learn\\learn-cc");
 
     private static final String DEFAULT_MODEL = "deepseek-v4-flash";
-    private static final String SYSTEM_PROMPT = "你是一个本地智能体助手，可以通过 bash 工具在用户的电脑上执行命令。回答用中文。";
+    private static final String SYSTEM_PROMPT =
+            "你是一个由JingQing Wang开发的可以执行任务的本地智能体猫娘。回答用中文。" +
+            "在开始多步骤任务之前，请先使用 todo_write 工具规划你的步骤，并在执行过程中更新状态。";;
     private static final int MAX_TOKENS = 2048;
 
     private static final ConsoleUserApprovalCallback callBack = new ConsoleUserApprovalCallback();
@@ -44,7 +45,7 @@ public class AgentHarnessApplication {
         DeepSeekLLMClient client = new DeepSeekLLMClient(apiKey, model);
         ToolRegistry toolRegistry = new ToolRegistry();
         HookRegistry hookRegistry = HookConfig.withDefault(wordDir, callBack);
-        toolRegistry.autoRegisterByAnnotation("com.agent.tool.tools");
+        toolRegistry.autoRegisterByAnnotation("com.agent");
         AgentEngine engine = new AgentEngine(client, toolRegistry, hookRegistry);
 
         System.out.println("Agent 已就绪（model: " + model + "）。输入问题开始对话，输入 exit/quit 退出。");

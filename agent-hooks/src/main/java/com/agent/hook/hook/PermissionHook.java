@@ -1,8 +1,9 @@
 package com.agent.hook.hook;
 
-import com.agent.hook.Hook;
-import com.agent.hook.HookResult;
-import com.agent.model.content_block.ToolUseBlock;
+import com.agent.core.hook.Hook;
+import com.agent.core.hook.HookEvent;
+import com.agent.core.hook.HookResult;
+import com.agent.core.model.content_block.ToolUseBlock;
 import com.agent.permission.PermissionPipeline;
 import com.agent.permission.PermissionResult;
 
@@ -14,7 +15,7 @@ public class PermissionHook implements Hook {
     }
 
     @Override
-    public HookResult execute(Object... args) {
+    public HookResult execute(HookEvent event, Object... args) {
         ToolUseBlock block = (ToolUseBlock) args[0];
         PermissionResult result = pipeline.check(block.name(), block.input());
         return switch (result) {
