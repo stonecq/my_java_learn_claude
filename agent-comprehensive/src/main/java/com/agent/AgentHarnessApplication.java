@@ -2,6 +2,8 @@ package com.agent;
 
 import com.agent.client.DeepSeekLLMClient;
 import com.agent.engine.AgentEngine;
+import com.agent.hook.HookRegistry;
+import com.agent.hook.config.HookConfig;
 import com.agent.model.AgentResponse;
 import com.agent.model.content_block.ContentBlock;
 import com.agent.model.content_block.TextBlock;
@@ -41,8 +43,9 @@ public class AgentHarnessApplication {
         // 2. 组装 AgentEngine：Client + ToolRegistry(BashTool) + Engine
         DeepSeekLLMClient client = new DeepSeekLLMClient(apiKey, model);
         ToolRegistry toolRegistry = new ToolRegistry();
+        HookRegistry hookRegistry = HookConfig.withDefault(wordDir, callBack);
         toolRegistry.autoRegisterByAnnotation("com.agent.tool.tools");
-        AgentEngine engine = new AgentEngine(wordDir , client, toolRegistry, callBack);
+        AgentEngine engine = new AgentEngine(client, toolRegistry, hookRegistry);
 
         System.out.println("Agent 已就绪（model: " + model + "）。输入问题开始对话，输入 exit/quit 退出。");
 
@@ -65,6 +68,7 @@ public class AgentHarnessApplication {
                 AgentResponse response = engine.run(SYSTEM_PROMPT, query, MAX_TOKENS);
                 printFinalAnswer(response);
             } catch (Exception e) {
+                e.printStackTrace();
                 System.err.println("出错: " + e.getMessage());
             }
         }

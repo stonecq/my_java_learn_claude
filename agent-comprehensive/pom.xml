@@ -27,6 +27,11 @@
             <artifactId>agent-permission</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.agent</groupId>
+            <artifactId>agent-hooks</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

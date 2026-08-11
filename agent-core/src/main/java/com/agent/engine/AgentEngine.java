@@ -2,19 +2,17 @@ package com.agent.engine;
 
 import com.agent.client.Client;
 import com.agent.enums.StopReasonEnum;
+import com.agent.hook.HookEvent;
+import com.agent.hook.HookRegistry;
+import com.agent.hook.HookResult;
 import com.agent.model.AgentMessage;
 import com.agent.model.AgentResponse;
 import com.agent.model.AgentState;
 import com.agent.model.content_block.ContentBlock;
 import com.agent.model.content_block.ToolResultBlock;
 import com.agent.model.content_block.ToolUseBlock;
-import com.agent.permission.PermissionConfig;
-import com.agent.permission.PermissionPipeline;
-import com.agent.permission.PermissionResult;
-import com.agent.permission.UserApprovalCallback;
 import com.agent.tool.ToolRegistry;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,22 +22,22 @@ public class AgentEngine {
 
     private final ToolRegistry toolRegistry;
 
-    private final AgentState agentState;
+    private final HookRegistry hookRegister;
 
-    private final PermissionPipeline permissionPipeline;
+    private final AgentState agentState;
 
     private final int maxTurns;
 
-    public AgentEngine(Path workdir, Client llmClient, ToolRegistry toolRegistry, UserApprovalCallback callback) {
-        this(workdir, llmClient, toolRegistry, 50, callback);
+    public AgentEngine(Client llmClient, ToolRegistry toolRegistry, HookRegistry hookRegister) {
+        this(llmClient, toolRegistry, hookRegister, 50);
     }
 
-    public AgentEngine(Path workdir, Client llmClient, ToolRegistry toolRegistry, int maxTurns, UserApprovalCallback callback) {
+    public AgentEngine(Client llmClient, ToolRegistry toolRegistry, HookRegistry hookRegister, int maxTurns) {
         this.llmClient = llmClient;
         this.toolRegistry = toolRegistry;
         this.agentState = new AgentState();
         this.maxTurns = maxTurns;
-        this.permissionPipeline = PermissionConfig.withDefaults(workdir, callback);
+        this.hookRegister = hookRegister;
     }
 
     public AgentResponse run(String systemPrompt, String userMessage, int maxTokens) {
@@ -48,6 +46,7 @@ public class AgentEngine {
         messages.add(AgentMessage.forUser(userMessage));
         agentState.setMessages(messages);
         agentState.setTurnCount(0);
+        hookRegister.trigger(HookEvent.USER_PROMPT_SUBMIT, userMessage);
 
         AgentResponse response = null;
         while (agentState.getTurnCount() < maxTurns) {
@@ -58,19 +57,22 @@ public class AgentEngine {
             // Step 3: 追加 assistant 响应；没有 tool_use 块说明模型正常回答完毕，结束循环
             messages.add(AgentMessage.forAssistant(response.getContent()));
             if (!StopReasonEnum.TOOL_USE.getValue().equals(response.getStopReason())) {
+                hookRegister.trigger(HookEvent.STOP, messages);
                 return response;
             }
 
-            // Step 4: 逐个过权限检查后执行 tool_use 块，收集结果
+            // Step 4: PRE_TOOL_USE 拦截 -> 执行工具 -> POST_TOOL_USE 收尾，收集结果
             List<ToolResultBlock> toolResults = response.getContent().stream()
                     .filter(ToolUseBlock.class::isInstance)
                     .map(ToolUseBlock.class::cast)
                     .map(block -> {
-                        PermissionResult result = permissionPipeline.check(block.name(), block.input());
-                        if (result instanceof PermissionResult.Denied(String reason)) {
-                            return new ToolResultBlock(block.id(), "权限拒绝: " + reason, true);
+                        HookResult pre = hookRegister.trigger(HookEvent.PRE_TOOL_USE, block);
+                        if (pre instanceof HookResult.Blocked(String reason)) {
+                            return new ToolResultBlock(block.id(), "拦截: " + reason, true);
                         }
-                        return toolRegistry.dispatch(block);
+                        ToolResultBlock result = toolRegistry.dispatch(block);
+                        hookRegister.trigger(HookEvent.POST_TOOL_USE, block, result);
+                        return result;
                     })
                     .toList();
 
@@ -78,6 +80,7 @@ public class AgentEngine {
             List<ContentBlock> toolResultBlocks = new ArrayList<>(toolResults);
             messages.add(AgentMessage.forToolResults(toolResultBlocks));
         }
+        hookRegister.trigger(HookEvent.STOP, messages);
         return response;
     }
 }
