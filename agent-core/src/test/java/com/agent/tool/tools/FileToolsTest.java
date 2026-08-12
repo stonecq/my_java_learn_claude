@@ -33,7 +33,7 @@ class FileToolsTest {
     @Test
     void annotationScan_registersAllFileTools() {
         ToolRegistry registry = new ToolRegistry();
-        registry.autoRegisterByAnnotation("com.agent.tool.tools");
+        registry.autoRegisterByAnnotation("com.agent.core.tool.tools");
 
         List<String> names = registry.getAllDescriptors().stream()
                 .map(ToolDescriptor::getName)
@@ -119,7 +119,7 @@ class FileToolsTest {
     @Test
     void dispatchViaRegistry_runsToolAndReturnsResult() throws Exception {
         ToolRegistry registry = new ToolRegistry();
-        registry.autoRegisterByAnnotation("com.agent.tool.tools");
+        registry.autoRegisterByAnnotation("com.agent.core.tool.tools");
 
         var result = registry.dispatch(new ToolUseBlock("t1", "write",
                 Map.of("path", "via-registry.txt", "content", "ok")));

@@ -8,7 +8,7 @@ import com.agent.core.tool.ToolDescriptor;
 import java.util.List;
 import java.util.Map;
 
-@ToolComponent(group = "planning")
+@ToolComponent(group = "planning", subagentExcluded = true)
 public class TodoWriteTool implements Tool {
     private final TodoWriteValidator validator = new TodoWriteValidator();
     private final TodoList todoList = new TodoList(new TodoRenderer());

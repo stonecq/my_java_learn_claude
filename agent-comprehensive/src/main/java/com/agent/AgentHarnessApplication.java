@@ -8,6 +8,7 @@ import com.agent.core.model.AgentResponse;
 import com.agent.core.model.content_block.ContentBlock;
 import com.agent.core.model.content_block.TextBlock;
 import com.agent.core.tool.ToolRegistry;
+import com.agent.subagent.tool.TaskTool;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -45,6 +46,7 @@ public class AgentHarnessApplication {
         DeepSeekLLMClient client = new DeepSeekLLMClient(apiKey, model);
         ToolRegistry toolRegistry = new ToolRegistry();
         HookRegistry hookRegistry = HookConfig.withDefault(wordDir, callBack);
+        toolRegistry.registerProvider(TaskTool.class, () -> new TaskTool(client, toolRegistry, hookRegistry, MAX_TOKENS));
         toolRegistry.autoRegisterByAnnotation("com.agent");
         AgentEngine engine = new AgentEngine(client, toolRegistry, hookRegistry);
 

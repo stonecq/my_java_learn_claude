@@ -38,6 +38,11 @@
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.agent</groupId>
+            <artifactId>agent-subagent</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

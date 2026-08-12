@@ -12,4 +12,6 @@ public @interface ToolComponent {
     boolean enabled() default true;
 
     String group() default "default";
+
+    boolean subagentExcluded() default false;
 }
